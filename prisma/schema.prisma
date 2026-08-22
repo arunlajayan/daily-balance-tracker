@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role{
+  USER
+  ADMIN
+}
+
+model UserProfile {
+  id        String   @id @default(uuid()) @map("user_id") @db.Uuid
+  email     String   @unique
+  role      Role      @default(USER)
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  dailyTrackers DailyTracker[]
+  workTasks     WorkTask[]
+
+  @@map("user_profile")
+}
+
+model DailyTracker {
+  id        String   @id @default(uuid()) @map("tracker_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  logDate   DateTime @map("log_date") @db.Date
+  isClosed  Boolean  @default(false) @map("is_closed")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user         UserProfile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sleepLogs    SleepLog[]
+  workTimeLogs WorkTimeLog[]
+  leisureLogs  LeisureLog[]
+
+  @@unique([userId, logDate])
+  @@map("daily_tracker")
+}
+
+model SleepLog {
+  id          String    @id @default(uuid()) @map("sleep_id") @db.Uuid
+  trackerId   String    @map("tracker_id") @db.Uuid
+  targetSleep Float     @default(8.0) @map("target_sleep")
+  bedTime     DateTime? @map("bed_time")
+  wakeTime    DateTime? @map("wake_time")
+
+  tracker DailyTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+
+  @@map("sleep_log")
+}
+
+model WorkTask {
+  id              String   @id @default(uuid()) @map("task_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  taskName        String   @map("task_name")
+  estHours        Float    @default(0.0) @map("est_hours")
+  progressPercent Int      @default(0) @map("progress_percent")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user         UserProfile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workTimeLogs WorkTimeLog[]
+
+  @@map("work_task")
+}
+
+model WorkTimeLog {
+  id             String @id @default(uuid()) @map("log_id") @db.Uuid
+  trackerId      String @map("tracker_id") @db.Uuid
+  taskId         String @map("task_id") @db.Uuid
+  timeSpentHours Float  @default(0.0) @map("time_spent_hours")
+
+  tracker DailyTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  task    WorkTask     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("work_time_log")
+}
+
+model LeisureCategory {
+  id           String   @id @default(uuid()) @map("category_id") @db.Uuid
+  activityName String   @unique @map("activity_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  leisureLogs LeisureLog[]
+
+  @@map("leisure_category")
+}
+
+model LeisureLog {
+  id            String @id @default(uuid()) @map("log_id") @db.Uuid
+  trackerId     String @map("tracker_id") @db.Uuid
+  categoryId    String @map("category_id") @db.Uuid
+  durationHours Float  @default(0.0) @map("duration_hours")
+
+  tracker  DailyTracker    @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  category LeisureCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("leisure_log")
+}
