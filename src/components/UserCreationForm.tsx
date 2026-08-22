@@ -5,6 +5,7 @@ import { UserPlus, CheckCircle2, XCircle } from "lucide-react";
 import InputField from "@/components/InputField";
 import SelectField from "@/components/SelectField";
 import SubmitButton from "@/components/SubmitButton";
+import { trpc } from "@/utils/trpc";
 
 const TIMEZONES = [
   { value: "America/New_York (UTC-5)", label: "America/New_York (UTC-5)" },
@@ -19,12 +20,14 @@ const TIMEZONES = [
 interface UserFormState {
   fullName: string;
   email: string;
+  password: string;
   timezone: string;
 }
 
 interface UserFormErrors {
   fullName?: string;
   email?: string;
+  password?: string;
   timezone?: string;
 }
 
@@ -32,12 +35,22 @@ export default function UserCreationForm() {
   const [formState, setFormState] = useState<UserFormState>({
     fullName: "",
     email: "",
+    password: "",
     timezone: "",
   });
   const [errors, setErrors] = useState<UserFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
+
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: (data) => {
+      alert(`Success! Welcome ${data.email}`);
+    },
+    onError: (error) => {
+      alert(`Error: ${error.message}`);
+    }
+  });
 
   const validate = useCallback((): boolean => {
     const newErrors: UserFormErrors = {};
@@ -79,22 +92,20 @@ export default function UserCreationForm() {
     setStatusMessage("");
 
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Simulate 10% failure rate for demo
       if (Math.random() < 0.1) throw new Error("Network error");
-
+      console.log(formState)
+      registerMutation.mutate(formState)
       setStatus("success");
       setStatusMessage("User account created successfully! Redirecting to dashboard...");
-      setFormState({ fullName: "", email: "", timezone: "" });
+      setFormState({ fullName: "", email: "", password: "", timezone: "" });
     } catch (err) {
       setStatus("error");
       setStatusMessage(err instanceof Error ? err.message : "Failed to create user. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [validate]);
+  }, [validate, formState, registerMutation]);
 
   const isFormValid = useMemo(() => {
     return (
@@ -119,7 +130,7 @@ export default function UserCreationForm() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-5">
+      <div className="grid grid-cols-1 gap-5 text-black">
         <InputField
           label="Full Name"
           name="fullName"
@@ -139,6 +150,17 @@ export default function UserCreationForm() {
           onChange={handleChange("email")}
           error={errors.email}
           placeholder="e.g., alex@example.com"
+          required
+          disabled={isLoading}
+        />
+        <InputField
+          label="Password"
+          name="password"
+          type="password"
+          value={formState.password}
+          onChange={handleChange("password")}
+          error={errors.password}
+          placeholder="*********"
           required
           disabled={isLoading}
         />
