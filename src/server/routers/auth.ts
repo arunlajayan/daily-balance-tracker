@@ -1,14 +1,13 @@
 import { TRPCError } from '@trpc/server';
-import { hash } from 'bcryptjs';
-import { z } from 'zod';
+import bcrypt, { hash } from 'bcryptjs';
 import { router, publicProcedure } from '../trpc';
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
-import { registerUserSchema } from '@/shared/validators/auth';
+import { loginUserSchema, registerUserSchema } from '@/shared/validators/auth';
 
 export const authRouter = router({
-  
+
   register: publicProcedure
     .input(registerUserSchema)
     .mutation(async ({ input }) => {
@@ -33,6 +32,7 @@ export const authRouter = router({
       const newUser = await prisma.userProfile.create({
         data: {
           email,
+          fullName,
           passwordHash: hashedPassword,
           timezone,
         },
@@ -47,4 +47,27 @@ export const authRouter = router({
         message: 'Account created successfully',
       };
     }),
+
+  login: publicProcedure
+    .input(loginUserSchema)
+    .mutation(async ({ input }) => {
+      const { email, password } = input
+
+      const existingUser = await prisma.userProfile.findUnique({
+        where: { email },
+      });
+
+      if (!existingUser) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'user not register',
+        });
+      }
+
+      const result = bcrypt.compareSync(password, existingUser.passwordHash)
+      return {
+        user: existingUser,
+        result
+      }
+    })
 });

@@ -24,6 +24,16 @@ interface UserFormState {
   timezone: string;
 }
 
+enum FormState {
+  Register,
+  LogIn
+}
+
+interface UserLoginState {
+  email: string,
+  password: string
+}
+
 interface UserFormErrors {
   fullName?: string;
   email?: string;
@@ -38,6 +48,11 @@ export default function UserCreationForm() {
     password: "",
     timezone: "",
   });
+  const [loginState, setLoginState] = useState<UserLoginState>({
+    email: "",
+    password: "",
+  });
+  const [currentForm, setCurrentForm] = useState<FormState>(FormState.Register)
   const [errors, setErrors] = useState<UserFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
@@ -69,19 +84,28 @@ export default function UserCreationForm() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formState]);
+  }, [formState,]);
 
-  const handleChange = useCallback(
-    (field: keyof UserFormState) =>
-      (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { value } = e.target;
-        setFormState((prev) => ({ ...prev, [field]: value }));
+ const handleChange = useCallback(
+  (field: keyof UserFormState | keyof UserLoginState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { value } = e.target;
+
+      if (currentForm === FormState.Register) {
+        setFormState((prev) => ({ ...prev, [field as keyof UserFormState]: value }));
         if (errors[field as keyof UserFormErrors]) {
           setErrors((prev) => ({ ...prev, [field]: undefined }));
         }
-      },
-    [errors]
-  );
+      } else {
+        setLoginState((prev) => ({ ...prev, [field as keyof UserLoginState]: value }));
+        if (errors[field as keyof UserFormErrors]) {
+          setErrors((prev) => ({ ...prev, [field]: undefined }));
+        }
+      }
+    },
+  [currentForm, errors]
+);
+
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +118,6 @@ export default function UserCreationForm() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       if (Math.random() < 0.1) throw new Error("Network error");
-      console.log(formState)
       registerMutation.mutate(formState)
       setStatus("success");
       setStatusMessage("User account created successfully! Redirecting to dashboard...");
@@ -116,72 +139,89 @@ export default function UserCreationForm() {
   }, [formState]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      {status === "success" && (
-        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm font-medium">{statusMessage}</p>
-        </div>
-      )}
-      {status === "error" && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          <XCircle className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm font-medium">{statusMessage}</p>
-        </div>
-      )}
+    <div className="mt-2">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        {status === "success" && (
+          <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm font-medium">{statusMessage}</p>
+          </div>
+        )}
+        {status === "error" && (
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            <XCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm font-medium">{statusMessage}</p>
+          </div>
+        )}
 
-      <div className="grid grid-cols-1 gap-5 text-black">
-        <InputField
-          label="Full Name"
-          name="fullName"
-          type="text"
-          value={formState.fullName}
-          onChange={handleChange("fullName")}
-          error={errors.fullName}
-          placeholder="e.g., Alex Rivera"
-          required
-          disabled={isLoading}
-        />
-        <InputField
-          label="Email Address"
-          name="email"
-          type="email"
-          value={formState.email}
-          onChange={handleChange("email")}
-          error={errors.email}
-          placeholder="e.g., alex@example.com"
-          required
-          disabled={isLoading}
-        />
-        <InputField
-          label="Password"
-          name="password"
-          type="password"
-          value={formState.password}
-          onChange={handleChange("password")}
-          error={errors.password}
-          placeholder="*********"
-          required
-          disabled={isLoading}
-        />
-        <SelectField
-          label="Timezone"
-          name="timezone"
-          value={formState.timezone}
-          onChange={handleChange("timezone")}
-          options={TIMEZONES}
-          error={errors.timezone}
-          required
-          disabled={isLoading}
-        />
+        <div className="grid grid-cols-1 gap-5 text-black">
+          <InputField
+            label="Full Name"
+            name="fullName"
+            type="text"
+            value={formState.fullName}
+            onChange={handleChange("fullName")}
+            error={errors.fullName}
+            placeholder="e.g., Alex Rivera"
+            required
+            disabled={isLoading}
+            inVisible={currentForm === FormState.LogIn}
+          />
+          <InputField
+            label="Email Address"
+            name="email"
+            type="email"
+            value={formState.email}
+            onChange={handleChange("email")}
+            error={errors.email}
+            placeholder="e.g., alex@example.com"
+            required
+            disabled={isLoading}
+          />
+          <InputField
+            label="Password"
+            name="password"
+            type="password"
+            value={formState.password}
+            onChange={handleChange("password")}
+            error={errors.password}
+            placeholder="*********"
+            required
+            disabled={isLoading}
+          />
+          <SelectField
+            label="Timezone"
+            name="timezone"
+            value={formState.timezone}
+            onChange={handleChange("timezone")}
+            options={TIMEZONES}
+            error={errors.timezone}
+            required
+            disabled={isLoading }
+            inVisible={currentForm === FormState.LogIn}
+          />
+        </div>
+
+        <div className="pt-2 ">
+          <SubmitButton isLoading={isLoading } disabled={!isFormValid }>
+            <UserPlus className="w-4 h-4 mr-2" />{
+              currentForm === FormState.LogIn ? "login User Account" : "Create User Account"
+            }
+
+          </SubmitButton>
+
+        </div>
+
+      </form>
+      <div className="mt-6 ml-0">
+        <button onClick={() => FormState.Register === currentForm ? setCurrentForm(FormState.LogIn) : setCurrentForm(FormState.Register)} className="max-w-md text-white p-3 bg-black rounded-lg shadow-md">
+          {
+            currentForm === FormState.LogIn ? "Create User Account" : "login User Account"
+          }
+
+        </button>
       </div>
 
-      <div className="pt-2">
-        <SubmitButton isLoading={isLoading} disabled={!isFormValid}>
-          <UserPlus className="w-4 h-4 mr-2" />
-          Create User Account
-        </SubmitButton>
-      </div>
-    </form>
+    </div>
   );
 }

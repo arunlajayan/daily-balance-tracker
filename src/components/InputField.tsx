@@ -8,6 +8,7 @@ interface InputFieldProps {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  inVisible?: boolean;
 }
 
 export default function InputField({
@@ -20,9 +21,10 @@ export default function InputField({
   placeholder,
   required,
   disabled,
+  inVisible
 }: InputFieldProps) {
   return (
-    <div className="space-y-1.5">
+    <div className={`space-y-1.5 ${inVisible ? 'hidden' : ''}`}>
       <label htmlFor={name} className="block text-sm font-medium text-slate-700">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
