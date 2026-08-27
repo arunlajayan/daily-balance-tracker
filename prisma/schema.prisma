@@ -28,7 +28,7 @@ model UserProfile {
   timezone  String   @default("UTC")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
+  refreshToken String?
   dailyTrackers DailyTracker[]
   workTasks     WorkTask[]
 
