@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, BarChart3, ShieldCheck, Users, Zap } from "lucide-react";
-import UserAuthForm from "@/components/UserAuthForm";
+import UserCreationForm from "@/components/UserCreationForm";
 
 const FEATURES = [
   {
@@ -117,7 +117,7 @@ export default function LoginPage() {
         <div className="flex-1 flex items-center justify-center px-4 pb-12">
           <div className="w-full max-w-md">
             <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xl shadow-slate-200/60">
-              <UserAuthForm />
+              <UserCreationForm />
             </div>
             <p className="text-center text-xs text-slate-400 mt-6">
               By continuing, you agree to our{" "}
